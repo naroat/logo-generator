@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logo生成器</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <!-- 引入 Vue 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 html2canvas 用于导出图片 -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Playfair+Display:wght@400;700&family=Pacifico&family=Abril+Fatface&family=Permanent+Marker&family=Montserrat:wght@400;700&family=Oswald:wght@400;700&family=Dancing+Script&family=Quicksand:wght@400;700&family=Raleway:wght@400;700&family=Lobster&family=Comfortaa:wght@400;700&family=Righteous&family=Sacramento&family=Monoton&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -17,7 +19,6 @@
             --candy-purple: #DA70D6;
         }
 
-        /* 只保留一些无法用 Tailwind 实现的样式 */
         .theme-preview span {
             white-space: nowrap;
             overflow: hidden;
@@ -42,6 +43,59 @@
         .color-picker-wrapper input[type="color"]::-webkit-color-swatch {
             border: none;
             border-radius: 0.5rem;
+        }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+
+        .max-h-60vh::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .max-h-60vh::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .max-h-60vh::-webkit-scrollbar-thumb {
+            background-color: #e5e7eb;
+            border-radius: 2px;
+        }
+
+        .max-h-60vh::-webkit-scrollbar-thumb:hover {
+            background-color: #d1d5db;
+        }
+
+        /* 美化滑块样式 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 3px;
+            background-image: linear-gradient(#ec4899, #ec4899);
+            background-repeat: no-repeat;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #ec4899;
+            cursor: pointer;
+            box-shadow: 0 0 2px 0 #555;
+            transition: background .3s ease-in-out;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            -webkit-appearance: none;
+            box-shadow: none;
+            border: none;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 2px #fff, 0 0 0 4px #ec4899;
         }
     </style>
 </head>
@@ -91,37 +145,11 @@
                 </div>
             </div>
 
-            <!-- 推荐主题 -->
-            <h2 class="text-xl md:text-2xl font-bold text-pink-500 mb-4 md:mb-6 pl-4 border-l-4 border-pink-500">
-                {{ t.recommended }}
-            </h2>
-            <div class="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg mb-8 md:mb-12">
-                <div class="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 lg:grid-cols-10 gap-2 md:gap-3">
-                    <div v-for="theme in localizedThemes"
-                        class="aspect-square rounded-lg overflow-hidden shadow hover:-translate-y-1 transition-all duration-300 cursor-pointer relative group"
-                        @click="applyTheme(theme)">
-                        <div class="w-full h-full flex items-center justify-center"
-                            :style="{
-                                backgroundColor: theme.bgColor,
-                                fontFamily: theme.font
-                            }">
-                            <span class="text-xs"
-                                :style="{
-                                    color: theme.textColor
-                                }">{{ theme.text }}</span>
-                        </div>
-                        <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            {{ theme.name }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Logo设计区域 -->
             <h2 class="text-xl md:text-2xl font-bold text-pink-500 mb-4 md:mb-6 pl-4 border-l-4 border-pink-500">
                 {{ t.logoDesign }}
             </h2>
-            <div class="flex flex-col lg:flex-row gap-4 lg:gap-8">
+            <div class="flex flex-col lg:flex-row gap-4 lg:gap-8 mb-8 md:mb-12">
                 <!-- 控制面板 -->
                 <div class="w-full lg:w-1/4">
                     <div class="bg-white rounded-xl md:rounded-2xl shadow-lg p-4 md:p-6 h-full">
@@ -196,6 +224,20 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- 修改垂直位置控制部分 -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">{{ t.controls.verticalPosition }}</label>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" 
+                                        v-model="verticalOffset" 
+                                        min="0" 
+                                        max="100" 
+                                        step="1"
+                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                                    <span class="text-sm text-gray-500 w-12">{{ verticalOffset }}%</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -226,29 +268,93 @@
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: getJustifyContent,
+                                    position: 'relative'
                                 }" 
                                 class="shadow-lg transition-all duration-300">
                                 <span :style="{
                                     color: textColor,
                                     fontSize: fontSize + 'px',
-                                    padding: '20px',
                                     fontFamily: fontFamily,
                                     fontWeight: fontWeight,
-                                    textShadow: textShadowBlur ? `0 0 ${textShadowBlur}px ${textShadowColor}` : 'none'
+                                    position: 'absolute',
+                                    left: textPosition === 'left' ? '20px' : 
+                                          textPosition === 'right' ? 'auto' : '50%',
+                                    right: textPosition === 'right' ? '20px' : 'auto',
+                                    top: verticalOffset + '%',  // 使用百分比位置
+                                    transform: `translate(${textPosition === 'center' ? '-50%' : '0'}, -50%)`,
+                                    whiteSpace: 'nowrap'
                                 }">{{ logoText }}</span>
                             </div>
                         </div>
 
                         <!-- 导出按钮 -->
                         <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4 md:mt-6">
-                            <button @click="exportLogo('png')" 
-                                class="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white py-2 md:py-3 px-4 md:px-6 rounded-lg shadow hover:shadow-lg transition-all hover:-translate-y-0.5 text-sm md:text-base">
-                                {{ t.actions.exportPNG }}
-                            </button>
+                            <!-- PNG导出按钮改为下拉式 -->
+                            <div class="relative" x-data="{ showSizes: false }">
+                                <button @click="showSizes = !showSizes" 
+                                    class="flex-1 bg-gradient-to-r from-pink-500 to-pink-600 text-white py-2 md:py-3 px-4 md:px-6 rounded-lg shadow hover:shadow-lg transition-all hover:-translate-y-0.5 text-sm md:text-base flex items-center justify-center gap-2 w-full">
+                                    {{ t.actions.exportPNG }}
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                
+                                <!-- 尺寸选择下拉菜单 -->
+                                <div v-if="showSizes" 
+                                    class="absolute bottom-full mb-2 right-0 bg-white rounded-lg shadow-lg p-2 min-w-[150px] z-10">
+                                    <div class="text-sm text-gray-500 px-3 py-2 border-b">{{ t.actions.selectSize }}</div>
+                                    <div class="space-y-1 mt-2">
+                                        <button v-for="size in [16, 32, 48, 64, 128, 256, 512]" 
+                                            @click="exportPngWithSize(size); showSizes = false"
+                                            class="w-full text-left px-3 py-2 hover:bg-pink-50 text-gray-700 text-sm rounded transition-colors">
+                                            {{ size }}x{{ size }} px
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SVG导出按钮保持不变 -->
                             <button @click="exportLogo('svg')" 
                                 class="flex-1 bg-gradient-to-r from-pink-400 to-pink-500 text-white py-2 md:py-3 px-4 md:px-6 rounded-lg shadow hover:shadow-lg transition-all hover:-translate-y-0.5 text-sm md:text-base">
                                 {{ t.actions.exportSVG }}
                             </button>
+
+                            <!-- ICO导出按钮改为简单按钮 -->
+                            <button @click="exportIco" 
+                                class="flex-1 bg-gradient-to-r from-pink-300 to-pink-400 text-white py-2 md:py-3 px-4 md:px-6 rounded-lg shadow hover:shadow-lg transition-all hover:-translate-y-0.5 text-sm md:text-base">
+                                {{ t.actions.exportICO }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 推荐主题 -->
+            <h2 class="text-xl md:text-2xl font-bold text-pink-500 mb-4 md:mb-6 pl-4 border-l-4 border-pink-500">
+                {{ t.recommended }}
+            </h2>
+            <div class="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
+                <div class="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-8 lg:grid-cols-10 gap-2 md:gap-3">
+                    <div v-for="theme in localizedThemes"
+                        class="aspect-square rounded-lg overflow-hidden shadow hover:-translate-y-1 transition-all duration-300 cursor-pointer relative group"
+                        :style="{
+                            backgroundColor: theme.borderRadius ? 'transparent' : undefined
+                        }"
+                        @click="applyTheme(theme)">
+                        <div class="w-full h-full flex items-center justify-center"
+                            :style="{
+                                backgroundColor: theme.bgColor,
+                                fontFamily: theme.font,
+                                borderRadius: theme.borderRadius ? theme.borderRadius + 'px' : '0px'
+                            }">
+                            <span class="text-xl sm:text-2xl"
+                                :style="{
+                                    color: theme.textColor,
+                                    fontSize: theme.text === 'LOGO' ? '20px' : '32px'
+                                }">{{ theme.text }}</span>
+                        </div>
+                        <div class="absolute bottom-0 left-0 right-0 bg-black/70 text-white text-xs py-1 px-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            {{ theme.name }}
                         </div>
                     </div>
                 </div>
@@ -260,7 +366,10 @@
             <p class="text-sm md:text-base text-pink-600">{{ t.footer.copyright.replace('{year}', new Date().getFullYear()) }}</p>
             <p class="mt-1 md:mt-2 text-sm md:text-base text-pink-400">{{ t.footer.tagline }}</p>
         </footer>
+
     </div>
+
+
 
     <script>
         const { createApp } = Vue
@@ -299,14 +408,23 @@
                     center: 'Center',
                     left: 'Left',
                     right: 'Right',
-                    fontWeight: 'Font Weight'
+                    fontWeight: 'Font Weight',
+                    verticalPosition: 'Vertical Position',
+                    top: 'Top',
+                    center: 'Center',
+                    bottom: 'Bottom'
                 },
                 actions: {
                     standardSize: 'Standard Size (300px)',
                     circular: 'Circular Logo',
                     exportPNG: 'Export PNG',
                     exportSVG: 'Export SVG',
-                    randomTheme: 'Random Theme'
+                    randomTheme: 'Random Theme',
+                    exportICO: 'Export ICO',
+                    selectIcoSize: 'Select Icon Sizes',
+                    download: 'Download',
+                    cancel: 'Cancel',
+                    selectSize: 'Select Size'
                 },
                 footer: {
                     copyright: '© {year} Logo Generator',
@@ -351,7 +469,7 @@
                 preview: '实时预览',
                 controls: {
                     text: 'Logo文本',
-                    size: '尺寸',
+                    size: '寸',
                     radius: '圆角',
                     font: '字体',
                     fontSize: '字体大小',
@@ -362,18 +480,27 @@
                     center: '居中',
                     left: '靠左',
                     right: '靠右',
-                    fontWeight: '字体粗细'
+                    fontWeight: '字体粗细',
+                    verticalPosition: '垂直位置',
+                    top: '顶部',
+                    center: '居中',
+                    bottom: '底部'
                 },
                 actions: {
                     standardSize: '标准尺寸 (300px)',
                     circular: '圆形Logo',
                     exportPNG: '导出PNG',
                     exportSVG: '导出SVG',
-                    randomTheme: '随机搭配'
+                    randomTheme: '随机配',
+                    exportICO: '导出ICO',
+                    selectIcoSize: '选择图标尺寸',
+                    download: '下载',
+                    cancel: '取消',
+                    selectSize: '选择尺寸'
                 },
                 footer: {
                     copyright: '© {year} Logo生成器',
-                    tagline: '用心制作'
+                    tagline: '用制作'
                 },
                 seo: {
                     title: 'Logo生成器 - 在线制作专业品牌标志',
@@ -426,7 +553,7 @@
                     ],
                     themes: [
                         {
-                            name: 'Fashion Brand',  // 英文名称
+                            name: 'Fashion Brand',
                             textColor: '#ffffff',
                             bgColor: '#ec4899',
                             font: 'Playfair Display',
@@ -440,130 +567,210 @@
                             text: 'LOGO'
                         },
                         {
-                            name: 'Coffee Brand',
-                            textColor: '#422006',
-                            bgColor: '#fef3c7',
-                            font: 'Pacifico',
+                            name: 'Creative Studio',
+                            textColor: '#ffffff',
+                            bgColor: '#6366f1',
+                            font: 'Montserrat',
                             text: 'LOGO'
                         },
                         {
-                            name: 'Creative Studio',
+                            name: 'Luxury Brand',
                             textColor: '#ffffff',
-                            bgColor: '#374151',
-                            font: 'Permanent Marker',
+                            bgColor: '#000000',
+                            font: 'Raleway',
+                            text: 'LOGO'
+                        },
+                        {
+                            name: 'Modern Agency',
+                            textColor: '#1e293b',
+                            font: 'Oswald',
+                            bgColor: '#f8fafc',
+                            text: 'LOGO'
+                        },
+                        {
+                            name: 'Design Studio',
+                            textColor: '#ffffff',
+                            bgColor: '#7c3aed',
+                            font: 'Righteous',
                             text: 'LOGO'
                         },
                         {
                             name: 'Beauty Brand',
-                            textColor: '#fdf2f8',
-                            bgColor: '#be185d',
-                            font: 'Abril Fatface',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Sports Brand',
-                            textColor: '#ffffff',
-                            bgColor: '#059669',
-                            font: 'Roboto',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Game Studio',
-                            textColor: '#ffffff',
-                            bgColor: '#7c3aed',
-                            font: 'Permanent Marker',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Sweet Shop',
                             textColor: '#831843',
-                            bgColor: '#fbcfe8',
-                            font: 'Pacifico',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Photography Studio',
-                            textColor: '#ffffff',
-                            bgColor: '#000000',
+                            bgColor: '#fce7f3',
                             font: 'Playfair Display',
                             text: 'LOGO'
                         },
                         {
-                            name: 'Floral Shop',
-                            textColor: '#14532d',
-                            bgColor: '#dcfce7',
-                            font: 'Abril Fatface',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Architecture Firm',
+                            name: 'Sport Brand',
                             textColor: '#ffffff',
-                            bgColor: '#334155',
-                            font: 'Roboto',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Music Studio',
-                            textColor: '#fef2f2',
                             bgColor: '#dc2626',
                             font: 'Permanent Marker',
                             text: 'LOGO'
                         },
                         {
-                            name: 'Kids Brand',
-                            textColor: '#ffffff',
-                            bgColor: '#8B5CF6',
-                            font: 'Pacifico',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Organic Food',
-                            textColor: '#065F46',
-                            bgColor: '#D1FAE5',
-                            font: 'Abril Fatface',
-                            text: 'LOGO'
-                        },
-                        {
                             name: 'Digital Agency',
                             textColor: '#ffffff',
-                            bgColor: '#2563EB',
-                            font: 'Roboto',
+                            bgColor: '#2563eb',
+                            font: 'Montserrat',
                             text: 'LOGO'
                         },
                         {
-                            name: 'Jewelry Store',
+                            name: 'Art Studio',
                             textColor: '#ffffff',
-                            bgColor: '#D4AF37',
-                            font: 'Playfair Display',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Fitness Center',
-                            textColor: '#ffffff',
-                            bgColor: '#DC2626',
-                            font: 'Permanent Marker',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Art Gallery',
-                            textColor: '#1F2937',
-                            bgColor: '#F3F4F6',
-                            font: 'Playfair Display',
-                            text: 'LOGO'
-                        },
-                        {
-                            name: 'Book Store',
-                            textColor: '#ffffff',
-                            bgColor: '#4B5563',
+                            bgColor: '#db2777',
                             font: 'Abril Fatface',
                             text: 'LOGO'
+                        },
+                        {
+                            name: 'Coffee Shop',
+                            textColor: '#422006',
+                            bgColor: '#fef3c7',
+                            font: 'Pacifico',
+                            text: '☕️'
+                        },
+                        {
+                            name: 'Plant Store',
+                            textColor: '#166534',
+                            bgColor: '#dcfce7',
+                            font: 'Quicksand',
+                            text: '🌸'
+                        },
+                        {
+                            name: 'Game Studio',
+                            textColor: '#ffffff',
+                            bgColor: '#7c3aed',
+                            font: 'Righteous',
+                            text: '🧩'
+                        },
+                        {
+                            name: 'Pet Shop',
+                            textColor: '#713f12',
+                            bgColor: '#fef3c7',
+                            font: 'Quicksand',
+                            text: '🐶'
+                        },
+                        {
+                            name: 'Music Studio',
+                            textColor: '#ffffff',
+                            bgColor: '#6b21a8',
+                            font: 'Permanent Marker',
+                            text: '🎧'
+                        },
+                        {
+                            name: 'Camera Store',
+                            textColor: '#ffffff',
+                            bgColor: '#1e293b',
+                            font: 'Oswald',
+                            text: '🎞️'
                         },
                         {
                             name: 'Travel Agency',
+                            textColor: '#0369a1',
+                            bgColor: '#e0f2fe',
+                            font: 'Comfortaa',
+                            text: '✈️'
+                        },
+                        {
+                            name: 'Food Delivery',
+                            textColor: '#991b1b',
+                            bgColor: '#fef2f2',
+                            font: 'Lobster',
+                            text: '🍔'
+                        },
+                        {
+                            name: 'Art Gallery',
+                            textColor: '#1e293b',
+                            bgColor: '#f8fafc',
+                            font: 'Montserrat',
+                            text: '🎨'
+                        },
+                        {
+                            name: 'Weather App',
+                            textColor: '#0c4a6e',
+                            bgColor: '#bae6fd',
+                            font: 'Comfortaa',
+                            text: '☀️'
+                        },
+                        {
+                            name: 'Circle Letter 1',
                             textColor: '#ffffff',
-                            bgColor: '#0EA5E9',
-                            font: 'Pacifico',
-                            text: 'LOGO'
+                            bgColor: '#8b5cf6',
+                            font: 'Montserrat',
+                            text: 'AB',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 2',
+                            textColor: '#ffffff',
+                            bgColor: '#ec4899',
+                            font: 'Playfair Display',
+                            text: 'M',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 3',
+                            textColor: '#ffffff',
+                            bgColor: '#14b8a6',
+                            font: 'Oswald',
+                            text: 'XY',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 4',
+                            textColor: '#ffffff',
+                            bgColor: '#f97316',
+                            font: 'Raleway',
+                            text: 'R',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 5',
+                            textColor: '#ffffff',
+                            bgColor: '#06b6d4',
+                            font: 'Abril Fatface',
+                            text: 'CD',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 6',
+                            textColor: '#ffffff',
+                            bgColor: '#84cc16',
+                            font: 'Righteous',
+                            text: 'W',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 7',
+                            textColor: '#ffffff',
+                            bgColor: '#6366f1',
+                            font: 'Montserrat',
+                            text: 'PQ',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 8',
+                            textColor: '#ffffff',
+                            bgColor: '#dc2626',
+                            font: 'Oswald',
+                            text: 'K',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 9',
+                            textColor: '#ffffff',
+                            bgColor: '#0ea5e9',
+                            font: 'Playfair Display',
+                            text: 'JL',
+                            borderRadius: 200
+                        },
+                        {
+                            name: 'Circle Letter 10',
+                            textColor: '#ffffff',
+                            bgColor: '#d946ef',
+                            font: 'Raleway',
+                            text: 'S',
+                            borderRadius: 200
                         }
                     ],
                     borderRadius: 0,
@@ -572,48 +779,70 @@
                         en: {
                             'Fashion Brand': 'Fashion Brand',
                             'Tech Company': 'Tech Company',
-                            'Coffee Brand': 'Coffee Brand',
                             'Creative Studio': 'Creative Studio',
+                            'Luxury Brand': 'Luxury Brand',
+                            'Modern Agency': 'Modern Agency',
+                            'Design Studio': 'Design Studio',
                             'Beauty Brand': 'Beauty Brand',
-                            'Sports Brand': 'Sports Brand',
-                            'Game Studio': 'Game Studio',
-                            'Sweet Shop': 'Sweet Shop',
-                            'Photography Studio': 'Photography Studio',
-                            'Floral Shop': 'Floral Shop',
-                            'Architecture Firm': 'Architecture Firm',
-                            'Music Studio': 'Music Studio',
-                            'Kids Brand': 'Kids Brand',
-                            'Organic Food': 'Organic Food',
+                            'Sport Brand': 'Sport Brand',
                             'Digital Agency': 'Digital Agency',
-                            'Jewelry Store': 'Jewelry Store',
-                            'Fitness Center': 'Fitness Center',
+                            'Art Studio': 'Art Studio',
+                            'Coffee Shop': 'Coffee Shop',
+                            'Plant Store': 'Plant Store',
+                            'Game Studio': 'Game Studio',
+                            'Pet Shop': 'Pet Shop',
+                            'Music Studio': 'Music Studio',
+                            'Camera Store': 'Camera Store',
+                            'Travel Agency': 'Travel Agency',
+                            'Food Delivery': 'Food Delivery',
                             'Art Gallery': 'Art Gallery',
-                            'Book Store': 'Book Store',
-                            'Travel Agency': 'Travel Agency'
+                            'Weather App': 'Weather App',
+                            'Circle Letter 1': 'Circle Letter 1',
+                            'Circle Letter 2': 'Circle Letter 2',
+                            'Circle Letter 3': 'Circle Letter 3',
+                            'Circle Letter 4': 'Circle Letter 4',
+                            'Circle Letter 5': 'Circle Letter 5',
+                            'Circle Letter 6': 'Circle Letter 6',
+                            'Circle Letter 7': 'Circle Letter 7',
+                            'Circle Letter 8': 'Circle Letter 8',
+                            'Circle Letter 9': 'Circle Letter 9',
+                            'Circle Letter 10': 'Circle Letter 10'
                         },
                         zh: {
-                            'Fashion Brand': '时尚品牌',
+                            'Fashion Brand': '牌',
                             'Tech Company': '科技公司',
-                            'Coffee Brand': '咖啡品牌',
                             'Creative Studio': '创意工作室',
-                            'Beauty Brand': '美妆品',
-                            'Sports Brand': '运动品牌',
-                            'Game Studio': '游戏工作室',
-                            'Sweet Shop': '甜品店',
-                            'Photography Studio': '摄影工作室',
-                            'Floral Shop': '花艺店',
-                            'Architecture Firm': '建筑事务所',
-                            'Music Studio': '音乐工作室',
-                            'Kids Brand': '儿童品牌',
-                            'Organic Food': '有机食品',
+                            'Luxury Brand': '奢侈品牌',
+                            'Modern Agency': '代机构',
+                            'Design Studio': '设计工作室',
+                            'Beauty Brand': '美妆品牌',
+                            'Sport Brand': '运动品牌',
                             'Digital Agency': '数字机构',
-                            'Jewelry Store': '珠宝店',
-                            'Fitness Center': '健身中心',
+                            'Art Studio': '艺术工作室',
+                            'Coffee Shop': '咖啡',
+                            'Plant Store': '植物店',
+                            'Game Studio': '游戏工作室',
+                            'Pet Shop': '宠物店',
+                            'Music Studio': '音乐工作室',
+                            'Camera Store': '相机店',
+                            'Travel Agency': '旅行社',
+                            'Food Delivery': '外卖平台',
                             'Art Gallery': '艺术画廊',
-                            'Book Store': '书店',
-                            'Travel Agency': '旅行社'
+                            'Weather App': '天气应用',
+                            'Circle Letter 1': '圆形字母 1',
+                            'Circle Letter 2': '圆形字母 2',
+                            'Circle Letter 3': '圆形字母 3',
+                            'Circle Letter 4': '圆形字母 4',
+                            'Circle Letter 5': '圆形字母 5',
+                            'Circle Letter 6': '圆形字母 6',
+                            'Circle Letter 7': '圆形字母 7',
+                            'Circle Letter 8': '圆形字母 8',
+                            'Circle Letter 9': '圆形字母 9',
+                            'Circle Letter 10': '圆形字母 10'
                         }
-                    }
+                    },
+                    showSizes: false,  // 控制下拉菜单显示
+                    verticalOffset: 50,  // 替换原来的 verticalPosition，默认居中 50%
                 }
             },
             computed: {
@@ -633,24 +862,65 @@
                         ...theme,
                         name: this.themeNames[this.currentLang][theme.name]
                     }))
+                },
+                getTextTransform() {
+                    const translateX = this.textPosition === 'center' ? '-50%' : '0'
+                    return `translate(${translateX}, -50%)`  // 只保留水平方向的变换
                 }
             },
             methods: {
                 applyTheme(theme) {
+                    // 同步所有设置
                     this.textColor = theme.textColor
                     this.bgColor = theme.bgColor
                     this.fontFamily = theme.font
-                    this.logoText = 'LOGO'  // 统一设置为 LOGO
+                    this.logoText = theme.text
+                    this.borderRadius = theme.borderRadius || 0
+                    this.size = 300  // 设置默认尺寸
+                    this.fontSize = theme.text.length <= 2 ? 120 : 48  // 根据文本长度调整字体大小
+                    this.fontWeight = theme.fontWeight || 'normal'  // 设置字重
+                    this.verticalOffset = 50  // 重置垂直位置为居中
+                    this.textPosition = 'center'  // 重置水平位置为居中
                 },
                 async exportLogo(format) {
                     const element = document.getElementById('logoPreview')
                     try {
                         if (format === 'png') {
-                            const canvas = await html2canvas(element)
-                            const link = document.createElement('a')
-                            link.download = 'logo.png'
-                            link.href = canvas.toDataURL()
-                            link.click()
+                            const canvas = await html2canvas(element, {
+                                backgroundColor: null,
+                                scale: 4,  // 增加缩放比例从2提高到4
+                                useCORS: true,
+                                allowTaint: true,
+                                removeContainer: true,
+                                logging: false,
+                                imageSmoothing: true,  // 启用图像平滑
+                                imageSmoothingQuality: 'high'  // 使用高质量图像平滑
+                            });
+                            
+                            // 创建一个新的高分辨率canvas
+                            const transparentCanvas = document.createElement('canvas');
+                            transparentCanvas.width = canvas.width;
+                            transparentCanvas.height = canvas.height;
+                            const ctx = transparentCanvas.getContext('2d', {
+                                alpha: true,
+                                antialias: true  // 启用抗锯齿
+                            });
+                            
+                            // 设置更好的图像平滑
+                            ctx.imageSmoothingEnabled = true;
+                            ctx.imageSmoothingQuality = 'high';
+                            
+                            // 确保新canvas的背景是透明的
+                            ctx.clearRect(0, 0, transparentCanvas.width, transparentCanvas.height);
+                            
+                            // 将原始canvas的内容绘制到新canvas上
+                            ctx.drawImage(canvas, 0, 0);
+                            
+                            // 使用最高质量导出PNG
+                            const link = document.createElement('a');
+                            link.download = 'logo.png';
+                            link.href = transparentCanvas.toDataURL('image/png', 1.0);
+                            link.click();
                         } else if (format === 'svg') {
                             const svgData = `
                                 <svg width="${this.size}" height="${this.size}" xmlns="http://www.w3.org/2000/svg">
@@ -672,6 +942,42 @@
                             link.href = url
                             link.click()
                             URL.revokeObjectURL(url)
+                        } else if (format === 'ico') {
+                            // 提高ICO导出质量
+                            const canvas = document.createElement('canvas')
+                            canvas.width = 32
+                            canvas.height = 32
+                            const ctx = canvas.getContext('2d', {
+                                alpha: true,
+                                antialias: true
+                            })
+                            
+                            // 设置更好的图像平滑
+                            ctx.imageSmoothingEnabled = true
+                            ctx.imageSmoothingQuality = 'high'
+
+                            // 使用更高的缩放比例捕获原始图像
+                            const originalCanvas = await html2canvas(element, {
+                                scale: 8,  // 增加缩放比例到8
+                                useCORS: true,
+                                backgroundColor: null,
+                                logging: false,
+                                imageSmoothing: true,
+                                imageSmoothingQuality: 'high'
+                            })
+
+                            // 使用高质量缩放算法
+                            ctx.drawImage(originalCanvas, 0, 0, 32, 32)
+                            
+                            // 使用最高质量导出
+                            canvas.toBlob((blob) => {
+                                const url = URL.createObjectURL(blob)
+                                const link = document.createElement('a')
+                                link.download = 'favicon.png'
+                                link.href = url
+                                link.click()
+                                URL.revokeObjectURL(url)
+                            }, 'image/png', 1.0)
                         }
                     } catch (error) {
                         console.error('导出失败:', error)
@@ -686,6 +992,7 @@
                     this.borderRadius = 0
                     this.logoText = 'LOGO'  // 重置为 LOGO
                     this.fontWeight = 'normal'
+                    this.verticalOffset = 50  // 重置为居中位置
                     this.applyRandomTheme()
                 },
                 applyRandomTheme() {
@@ -704,15 +1011,126 @@
                     // 随机字体大小（在合理范围内）
                     this.fontSize = Math.floor(Math.random() * (72 - 36) + 36)
                     
-                    // 随机圆角（包括可能的圆形）
+                    // 随机���角（包括可能的圆形）
                     const maxRadius = this.size / 2
                     this.borderRadius = Math.floor(Math.random() * maxRadius)
                     this.fontWeight = Math.random() > 0.5 ? 'bold' : 'normal'
+                },
+                async exportIco() {
+                    try {
+                        const tempCanvas = document.createElement('canvas')
+                        const scale = 4
+                        tempCanvas.width = this.size * scale
+                        tempCanvas.height = this.size * scale
+                        const tempCtx = tempCanvas.getContext('2d')
+
+                        // 绘制背景
+                        tempCtx.fillStyle = this.bgColor
+                        tempCtx.beginPath()
+                        tempCtx.roundRect(0, 0, tempCanvas.width, tempCanvas.height, this.borderRadius * scale)
+                        tempCtx.fill()
+
+                        // 绘制文本
+                        tempCtx.fillStyle = this.textColor
+                        tempCtx.font = `${this.fontWeight} ${this.fontSize * scale}px ${this.fontFamily}`
+                        tempCtx.textAlign = this.textPosition === 'center' ? 'center' : 
+                                          this.textPosition === 'left' ? 'left' : 'right'
+                        tempCtx.textBaseline = 'middle'
+
+                        const x = this.textPosition === 'center' ? tempCanvas.width / 2 :
+                                 this.textPosition === 'left' ? 20 * scale :
+                                 tempCanvas.width - (20 * scale)
+                        const y = (tempCanvas.height * this.verticalOffset) / 100
+
+                        tempCtx.fillText(this.logoText, x, y)
+
+                        // 创建32x32的最终canvas
+                        const finalCanvas = document.createElement('canvas')
+                        finalCanvas.width = 32
+                        finalCanvas.height = 32
+                        const finalCtx = finalCanvas.getContext('2d')
+                        
+                        finalCtx.imageSmoothingEnabled = true
+                        finalCtx.imageSmoothingQuality = 'high'
+
+                        finalCtx.drawImage(tempCanvas, 0, 0, 32, 32)
+
+                        finalCanvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.download = 'favicon.ico'
+                            link.href = url
+                            link.click()
+                            URL.revokeObjectURL(url)
+                        }, 'image/x-icon')
+
+                    } catch (error) {
+                        console.error('导出失败:', error)
+                    }
+                },
+                async exportPngWithSize(size) {
+                    try {
+                        const scale = size > 256 ? 2 : 4
+                        const tempCanvas = document.createElement('canvas')
+                        tempCanvas.width = this.size * scale
+                        tempCanvas.height = this.size * scale
+                        const tempCtx = tempCanvas.getContext('2d')
+
+                        // 绘制背景
+                        tempCtx.fillStyle = this.bgColor
+                        tempCtx.beginPath()
+                        tempCtx.roundRect(0, 0, tempCanvas.width, tempCanvas.height, this.borderRadius * scale)
+                        tempCtx.fill()
+
+                        // 绘制文本
+                        tempCtx.fillStyle = this.textColor
+                        tempCtx.font = `${this.fontWeight} ${this.fontSize * scale}px ${this.fontFamily}`
+                        tempCtx.textAlign = this.textPosition === 'center' ? 'center' : 
+                                          this.textPosition === 'left' ? 'left' : 'right'
+                        tempCtx.textBaseline = 'middle'
+
+                        const x = this.textPosition === 'center' ? tempCanvas.width / 2 :
+                                 this.textPosition === 'left' ? 20 * scale :
+                                 tempCanvas.width - (20 * scale)
+                        const y = (tempCanvas.height * this.verticalOffset) / 100
+
+                        tempCtx.fillText(this.logoText, x, y)
+
+                        // 创建最终尺寸的canvas
+                        const finalCanvas = document.createElement('canvas')
+                        finalCanvas.width = size
+                        finalCanvas.height = size
+                        const finalCtx = finalCanvas.getContext('2d')
+                        
+                        finalCtx.imageSmoothingEnabled = true
+                        finalCtx.imageSmoothingQuality = 'high'
+
+                        finalCtx.drawImage(tempCanvas, 0, 0, size, size)
+
+                        finalCanvas.toBlob((blob) => {
+                            const url = URL.createObjectURL(blob)
+                            const link = document.createElement('a')
+                            link.download = `logo-${size}x${size}.png`
+                            link.href = url
+                            link.click()
+                            URL.revokeObjectURL(url)
+                        }, 'image/png', 1.0)
+
+                    } catch (error) {
+                        console.error('导出失败:', error)
+                    }
                 }
             },
             created() {
                 this.changeLang('en')
                 this.applyRandomTheme()
+            },
+            mounted() {
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.relative')) {
+                        this.showSizes = false
+                    }
+                })
             }
         }).mount('#app')
 
