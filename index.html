@@ -418,6 +418,37 @@
                     </span>
                 </div>
             </div>
+
+            <!-- 修改 FAQ 部分的展示方式 -->
+            <h2 class="text-xl md:text-2xl font-bold text-pink-500 mb-4 md:mb-6 pl-4 border-l-4 border-pink-500 mt-12">
+                {{ t.faq.title }}
+            </h2>
+            <div class="space-y-4">
+                <div v-for="(qa, index) in t.faq.items" 
+                    class="bg-white rounded-xl md:rounded-2xl shadow-lg overflow-hidden">
+                    <!-- 问题标题（可点击区域） -->
+                    <button @click="toggleFaq(index)" 
+                        class="w-full p-4 md:p-6 flex justify-between items-center hover:bg-gray-50 transition-colors">
+                        <h3 class="text-lg font-semibold text-gray-800 text-left">{{ qa.q }}</h3>
+                        <!-- 箭头图标 -->
+                        <svg class="w-5 h-5 text-gray-500 transition-transform duration-300"
+                            :class="{ 'rotate-180': faqOpenState[index] }"
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" 
+                                stroke-linejoin="round" 
+                                stroke-width="2" 
+                                d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <!-- 答案内容（折叠面板） -->
+                    <div v-show="faqOpenState[index]" 
+                        class="px-4 md:px-6 pb-4 md:pb-6 text-gray-600 border-t border-gray-100">
+                        <p class="pt-4">{{ qa.a }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 页脚 -->
@@ -514,6 +545,36 @@
                             'Free to use'
                         ]
                     }
+                },
+                faq: {
+                    title: 'FAQ',
+                    items: [
+                        {
+                            q: 'How do I add favicon to my website?',
+                            a: 'You can download the favicon.ico file and upload it to your website root directory. Then, add the following code to the <head> section of the HTML file: <link rel="icon" href="/favicon.ico" type="image/x-icon">',
+                            isOpen: false
+                        },
+                        {
+                            q: 'What file formats are available for export?',
+                            a: 'We support PNG (various sizes), SVG (vector format), and ICO (favicon) exports. PNG is best for general use, SVG for scalable graphics, and ICO for website favicons.',
+                            isOpen: false
+                        },
+                        {
+                            q: 'Are the fonts free to use?',
+                            a: 'We use Google Fonts which are free for personal and commercial use. However, we recommend checking the specific license terms for each font you plan to use.',
+                            isOpen: false
+                        },
+                        {
+                            q: 'Can I save my logo designs?',
+                            a: 'Currently, we don\'t provide a save feature. We recommend downloading your logo designs and keeping them locally on your device.',
+                            isOpen: false
+                        },
+                        {
+                            q: 'How can SVG format be opened locally after export without font style?',
+                            a: 'This is because you do not have a local font style, when you open an SVG file in your browser, the browser will look for the font file according to the font name in the SVG file, if your local font file does not have these font files, it will be displayed as the default font.',
+                            isOpen: false
+                        }
+                    ]
                 }
             },
             zh: {
@@ -545,7 +606,7 @@
                     textColor: '文字颜色',
                     bgColor: '背景颜色',
                     position: '文字位置',
-                    effects: '文字效果',
+                    effects: '字效果',
                     center: '居中',
                     left: '靠左',
                     right: '靠右',
@@ -591,6 +652,36 @@
                             '免费使用'
                         ]
                     }
+                },
+                faq: {
+                    title: '常见问题',
+                    items: [
+                        {
+                            q: '如何将favicon添加到我的网站？',
+                            a: '您可以下载favicon.ico文件，并将其上传到您的网站根目录。然后，在HTML文件的<head>部分添加以下代码：<link rel="icon" href="/favicon.ico" type="image/x-icon">',
+                            isOpen: false
+                        },
+                        {
+                            q: '支持哪些导出格式？',
+                            a: '我们支持PNG（多种尺寸）、SVG（矢量格式）和ICO（网站图标）导出。PNG适合一般用途，SVG适合可缩放图形，ICO用于网站图标。',
+                            isOpen: false
+                        },
+                        {
+                            q: '字体是免费使用的吗？',
+                            a: '我们使用的是Google Fonts，可以免费用于个人和商业用途。但我们建议您查看计划使用的每种字体的具体许可条款。',
+                            isOpen: false
+                        },
+                        {
+                            q: '我可以保存我的Logo设计吗？',
+                            a: '目前我们不提供保存功能。我们建议您下载Logo设计并将其保存在本地设备上。',
+                            isOpen: false
+                        },
+                        {
+                            q: '导出后SVG格式本地打开怎么没有没有字体样式？',
+                            a: '这是由于您本地没有字体样式，在浏览器中打开SVG文件时，浏览器会根据SVG文件中的字体名称去查找字体文件，如果您的本地没有这些字体文件，就会显示为默认字体。',
+                            isOpen: false
+                        }
+                    ]
                 }
             }
         }
@@ -614,7 +705,7 @@
                         { label: 'Pacifico - 手写艺术', value: 'Pacifico' },
                         { label: 'Abril Fatface - 复古粗体', value: 'Abril Fatface' },
                         { label: 'Permanent Marker - 马克笔', value: 'Permanent Marker' },
-                        { label: 'Montserrat - 现代几何', value: 'Montserrat' },
+                        { label: 'Montserrat - 现几何', value: 'Montserrat' },
                         { label: 'Oswald - 时尚凝练', value: 'Oswald' },
                         { label: 'Dancing Script - 优雅写', value: 'Dancing Script' },
                         { label: 'Quicksand - 圆润现代', value: 'Quicksand' },
@@ -1142,7 +1233,8 @@
                     textGradientEnd: '#00ff00',
                     useBgGradient: false,
                     bgGradientStart: '#ff0000',
-                    bgGradientEnd: '#00ff00'
+                    bgGradientEnd: '#00ff00',
+                    faqOpenState: {}  // 添加一个对象来跟踪FAQ的展开状态
                 }
             },
             computed: {
@@ -1219,7 +1311,7 @@
                                 imageSmoothingQuality: 'high'  // 使用高质量图像平滑
                             });
                             
-                            // 创建一个新的高分辨率canvas
+                            // 创建一个新的高分率canvas
                             const transparentCanvas = document.createElement('canvas');
                             transparentCanvas.width = canvas.width;
                             transparentCanvas.height = canvas.height;
@@ -1244,19 +1336,46 @@
                             link.href = transparentCanvas.toDataURL('image/png', 1.0);
                             link.click();
                         } else if (format === 'svg') {
+                            // 创建渐变定义和滤镜效果
+                            const gradientDefs = `
+                                ${this.useBgGradient ? `
+                                    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:${this.bgGradientStart}"/>
+                                        <stop offset="100%" style="stop-color:${this.bgGradientEnd}"/>
+                                    </linearGradient>
+                                ` : ''}
+                                ${this.useTextGradient ? `
+                                    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:${this.textGradientStart}"/>
+                                        <stop offset="100%" style="stop-color:${this.textGradientEnd}"/>
+                                    </linearGradient>
+                                ` : ''}
+                            `;
+
                             const svgData = `
                                 <svg width="${this.size}" height="${this.size}" xmlns="http://www.w3.org/2000/svg">
-                                    <rect width="100%" height="100%" fill="${this.bgColor}" rx="${this.borderRadius}" ry="${this.borderRadius}"/>
+                                    <defs>
+                                        ${gradientDefs}
+                                        
+                                        <style type="text/css">@import url(https://fonts.googleapis.com/css?family=${encodeURIComponent(this.fontFamily)});</style>
+                                    </defs>
+
+                                    <rect width="100%" height="100%" 
+                                        fill="${this.useBgGradient ? 'url(#bgGradient)' : this.bgColor}" 
+                                        rx="${this.borderRadius}" 
+                                        ry="${this.borderRadius}"/>
                                     <text
                                         x="${this.textPosition === 'center' ? '50%' : (this.textPosition === 'left' ? '20px' : (this.size - 20) + 'px')}"
-                                        y="50%"
+                                        y="${this.verticalOffset}%"
                                         font-family="${this.fontFamily}"
                                         font-size="${this.fontSize}px"
-                                        fill="${this.textColor}"
+                                        font-weight="${this.fontWeight}"
+                                        fill="${this.useTextGradient ? 'url(#textGradient)' : this.textColor}"
                                         text-anchor="${this.textPosition === 'center' ? 'middle' : (this.textPosition === 'left' ? 'start' : 'end')}"
                                         dominant-baseline="middle"
                                     >${this.logoText}</text>
-                                </svg>`
+                                </svg>`;
+
                             const blob = new Blob([svgData], { type: 'image/svg+xml' })
                             const url = URL.createObjectURL(blob)
                             const link = document.createElement('a')
@@ -1401,7 +1520,7 @@
 
                         tempCtx.fillText(this.logoText, x, y)
 
-                        // 创建32x32的最终canvas
+                        // 创32x32的最终canvas
                         const finalCanvas = document.createElement('canvas')
                         finalCanvas.width = 32
                         finalCanvas.height = 32
@@ -1499,6 +1618,9 @@
                     if (logoDesignSection) {
                         logoDesignSection.scrollIntoView({ behavior: 'smooth' })
                     }
+                },
+                toggleFaq(index) {
+                    this.faqOpenState[index] = !this.faqOpenState[index]
                 }
             },
             created() {
